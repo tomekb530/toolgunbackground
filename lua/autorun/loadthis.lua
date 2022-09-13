@@ -16,6 +16,10 @@ CUSTOMTOOLGUN.data = {
     descheight = 240,
     descsize = 30,
     descspeed = 200,
+    compass = false,
+    compasscolor = Color(255,255,255),
+    compassoutline = Color(0,0,0),
+    compassthickness = 4,
 }
 
 if SERVER then

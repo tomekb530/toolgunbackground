@@ -29,12 +29,13 @@ if(pnls[url])then return Material("error") end
             //print("ok")
         end
     end
-
-    timer.Simple(1,function()
-    if(IsValid(pnl)) then
-    pnls[url] = nil
-    pnl:Remove()
+    if not string.EndsWith(url,".gif") then
+        timer.Simple(1,function()
+        if(IsValid(pnl)) then
+        pnls[url] = nil
+        pnl:Remove()
+        end
+        end)
     end
-    end)
 return Material("error")
 end

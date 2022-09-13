@@ -7,6 +7,37 @@ for size=1,100 do
     )
 end
 
+local function DrawLineThickInternal(x,y,x2,y2,size)
+    if size < 1 then size = 2 end
+    if size == 1 then
+        surface.DrawLine(x,y,x2,y2)
+    else
+        local centerx = (x+x2)/2
+        local centery = (y+y2)/2
+
+        local w = math.sqrt((x2-x)^2+(y2-y)^2)
+
+        local ang = math.deg(math.atan2(y2-y,x2-x))
+
+        if w < 1 then w = 1 end
+
+        surface.DrawTexturedRectRotated(centerx,centery,w,size,-ang)
+        
+    end
+end
+
+local function DrawLineThick(x,y,x2,y2,size) --THANKS TO https://github.com/wiremod/wire/blob/a031e4d6c08f68818569f29c177c1e2df1faf9a9/lua/entities/gmod_wire_egp/lib/egplib/usefulfunctions.lua
+    local drawcolor = surface.GetDrawColor()
+    --calc contrast
+    local contrastcolor = Color(255-drawcolor.r,255-drawcolor.g,255-drawcolor.b,255)
+    surface.SetDrawColor(CUSTOMTOOLGUN.data.compassoutline)
+    DrawLineThickInternal(x,y,x2,y2,size+4)
+    surface.SetDrawColor(drawcolor)
+    DrawLineThickInternal(x,y,x2,y2,size)
+end
+
+
+
 local function DrawScrollingText( text, y, texwide , color,speed)
 	local w, h = surface.GetTextSize( text )
 	w = w + 64
@@ -36,7 +67,8 @@ local function drawScreen(self)
     local back =  render.GetRenderTarget()
     local oldW = ScrW()
     local oldH = ScrH()
-
+    local eyeAngles = LocalPlayer():EyeAngles()
+    local eyeYaw = eyeAngles.yaw
     render.SetRenderTarget( RTTexture )
 	render.SetViewPort( 0, 0, size,size )
 	cam.Start2D()
@@ -81,6 +113,31 @@ local function drawScreen(self)
         end
         //draw.SimpleTextOutlined("#tool." .. mode .. ".name","GModToolScreen"..CUSTOMTOOLGUN.data.textsize,CUSTOMTOOLGUN.data.textpos.x, CUSTOMTOOLGUN.data.textpos.y, textcolor, TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER,CUSTOMTOOLGUN.data.outlinesize,Color(0,0,0))
     end
+    if (CUSTOMTOOLGUN.data.compass) then
+        local center = size/2
+        local radius = size/3
+        local angle = (eyeYaw+180)
+        local thickness = CUSTOMTOOLGUN.data.compassthickness
+        local x = center + math.cos( math.rad( angle ) ) * radius
+        local y = center + math.sin( math.rad( angle ) ) * radius
+        local textx = center + math.cos( math.rad( angle ) ) * (radius+15)
+        local texty = center + math.sin( math.rad( angle ) ) * (radius+15)
+        draw.NoTexture()
+        surface.SetDrawColor(CUSTOMTOOLGUN.data.compasscolor)
+        DrawLineThick( center, center, x, y , thickness)
+        DrawLineThick(x,y,x+math.cos(45+math.rad(angle+180))*20,y+math.sin(45+math.rad(angle+180))*20,thickness)
+        DrawLineThick(x,y,x+math.cos(-45+math.rad(angle+180))*20,y+math.sin(-45+math.rad(angle+180))*20,thickness)
+        draw.SimpleTextOutlined("N","Trebuchet24",textx,texty,CUSTOMTOOLGUN.data.compasscolor,TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER,1,Color(0,0,0))
+        local secondangle = angle-90
+        local x = center + math.cos( math.rad( secondangle ) ) * radius
+        local y = center + math.sin( math.rad( secondangle ) ) * radius
+        local textx = center + math.cos( math.rad( secondangle ) ) * (radius+15)
+        local texty = center + math.sin( math.rad( secondangle ) ) * (radius+15)
+        DrawLineThick( center, center, x, y , thickness)
+        DrawLineThick(x,y,x-math.cos(45+math.rad(angle+270))*20,y-math.sin(45+math.rad(angle+270))*20,thickness)
+        DrawLineThick(x,y,x-math.cos(-45+math.rad(angle+270))*20,y-math.sin(-45+math.rad(angle+270))*20,thickness)
+        draw.SimpleTextOutlined("W","Trebuchet24",textx,texty,CUSTOMTOOLGUN.data.compasscolor,TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER,1,Color(0,0,0))
+    end
     cam.End2D()
     render.SetRenderTarget(back)
     render.SetViewPort( 0, 0, oldW, oldH )
@@ -95,7 +152,12 @@ end
 CUSTOMTOOLGUN.Load = function()
     if(!CUSTOMTOOLGUN.CanLoad())then return end
     local data = file.Read("customtoolgun.txt")
-    CUSTOMTOOLGUN.data = util.JSONToTable(data)
+    local parseddata = util.JSONToTable(data)
+    if(parseddata)then
+        for i,v in pairs(parseddata)do
+            CUSTOMTOOLGUN.data[i] = v
+        end
+    end
 end
 
 CUSTOMTOOLGUN.Save = function()
@@ -104,7 +166,7 @@ end
 
 
 --Hooking into toolgun
-hook.Add("InitPostEntity","ok",function()
+hook.Add("InitPostEntity","LoadCustomToolgun",function()
 local toolgun = weapons.Get("gmod_tool")
 toolgun.OldRenderScreen = toolgun.OldRenderScreen or toolgun.RenderScreen
 toolgun.RenderScreen = function(s)

@@ -112,6 +112,15 @@ local function OpenMenu()
         end)
     end
 
+    local compass = quickcheck(settingswrapper,"Show Compass")
+    compass:SetChecked(CUSTOMTOOLGUN.data.compass)
+    function compass:OnChange(check)
+        CUSTOMTOOLGUN.data.compass = check
+    end
+
+    quickcolor(settingswrapper,"Compass Color","compasscolor")
+    quickcolor(settingswrapper,"Compass Outline Color","compassoutline")
+
     local textsize = quicknum(settingswrapper,"Tool text size")
     textsize:SetMinMax(1,100)
     textsize:SetDecimals(0)
